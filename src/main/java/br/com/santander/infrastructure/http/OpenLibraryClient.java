@@ -11,33 +11,51 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+
+import static java.lang.String.format;
 
 @ApplicationScoped
 public class OpenLibraryClient {
 
-    private static final String BASE_URL = "https://openlibrary.org";
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenLibraryClient.class);
+    private static final String SEARCH_BOOK_QUERY = "%s/search.json?%s&fields=title,author_name&limit=10";
+    private static final String AUTHOR_NAME = "author_name";
+    private static final String TITLE = "title";
+
+    @ConfigProperty(name = "services.openlibrary.api.url")
+    public String baseUrl;
     private final Gson gson;
     private final Client client;
+    private final Random random;
 
     @Inject
     GPT4Client gpt4Client;
 
     public OpenLibraryClient() {
+        this.random = new Random();
         this.gson = new Gson();
         this.client = ClientBuilder.newClient();
     }
 
     public List<Book> fetchBooksByGenre(String genre) {
-        return fetchBooks("subject=" + genre);
+        List<Book> books = fetchBooks("subject=" + genre);
+        return completionInfo(books);
     }
 
     public List<Book> fetchBooksByAuthor(String author) {
         List<Book> books = fetchBooks("author=" + author);
+        return completionInfo(books);
+    }
 
+    private List<Book> completionInfo(List<Book> books) {
         for (Book book : books) {
             if (book.getGenre().isEmpty() || book.getDescription().isEmpty()) {
                 String prompt = buildPromptForBook(book);
@@ -53,22 +71,21 @@ public class OpenLibraryClient {
                 });
             }
         }
-
         return books;
     }
 
     private List<Book> fetchBooks(String queryParam) {
-        String url = BASE_URL + "/search.json?" + queryParam;
+        try {
+            LOGGER.info("Fetching books with query: {}", queryParam);
 
-        Response response = client
-                .target(url)
-                .request(MediaType.APPLICATION_JSON)
-                .get();
+            Response response = client
+                    .target(format(SEARCH_BOOK_QUERY, baseUrl, queryParam))
+                    .request(MediaType.APPLICATION_JSON)
+                    .get();
 
-        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return parseBooksFromResponse(response.readEntity(String.class));
-        } else {
-            System.err.println("Failed to fetch books: " + response.getStatus());
+        } catch (Exception e) {
+            LOGGER.error("Error fetching books: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -85,36 +102,27 @@ public class OpenLibraryClient {
                 books.add(parseBook(bookObject));
             }
         } catch (Exception e) {
-            System.err.println("Failed to parse books from response: " + e.getMessage());
+            LOGGER.error("Failed to parse books from response: {}", e.getMessage());
         }
 
         return books;
     }
 
     private Book parseBook(JsonObject bookObject) {
-        String title = getString(bookObject, "title");
-        String author = getFirstString(bookObject, "author_name");
-        String genre = getFirstString(bookObject, "subject");
-        String description = getStringFromJsonObject(bookObject, "first_sentence", "value");
-        return new Book(title, author, genre, description);
+        Long id = (long) random.nextInt(1000);
+        String title = getString(bookObject);
+        String author = getFirstString(bookObject);
+        return new Book(id, title, author, "", "");
     }
 
-    private String getString(JsonObject jsonObject, String key) {
-        return jsonObject.has(key) ? jsonObject.get(key).getAsString() : "";
+    private String getString(JsonObject jsonObject) {
+        return jsonObject.has(TITLE) ? jsonObject.get(TITLE).getAsString() : "";
     }
 
-    private String getFirstString(JsonObject jsonObject, String key) {
-        if (jsonObject.has(key) && jsonObject.get(key).isJsonArray()) {
-            JsonArray array = jsonObject.getAsJsonArray(key);
+    private String getFirstString(JsonObject jsonObject) {
+        if (jsonObject.has(AUTHOR_NAME) && jsonObject.get(AUTHOR_NAME).isJsonArray()) {
+            JsonArray array = jsonObject.getAsJsonArray(AUTHOR_NAME);
             return !array.isEmpty() ? array.get(0).getAsString() : "";
-        }
-        return "";
-    }
-
-    private String getStringFromJsonObject(JsonObject jsonObject, String key, String subKey) {
-        if (jsonObject.has(key) && jsonObject.get(key).isJsonObject()) {
-            JsonObject subObject = jsonObject.getAsJsonObject(key);
-            return subObject.has(subKey) ? subObject.get(subKey).getAsString() : "";
         }
         return "";
     }

@@ -12,4 +12,6 @@ public interface BookStoreRepository {
     List<Book> findByAuthor(String author);
 
     List<Book> findAll();
+
+    Book findById(Integer id);
 }

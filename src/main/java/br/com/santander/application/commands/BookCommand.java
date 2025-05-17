@@ -26,7 +26,13 @@ public class BookCommand {
 
         if (books.isEmpty()) {
             books = openLibraryClient.fetchBooksByGenre(genre).stream()
-                    .map(book -> new Book(book.getTitle(), book.getAuthor(), book.getGenre(), book.getDescription()))
+                    .map(book -> new Book(
+                            book.getId(),
+                            book.getTitle(),
+                            book.getAuthor(),
+                            book.getGenre(),
+                            book.getDescription()
+                    ))
                     .toList();
             books.forEach(bookStoreRepository::save);
         }
@@ -39,7 +45,13 @@ public class BookCommand {
 
         if (books.isEmpty()) {
             books = openLibraryClient.fetchBooksByAuthor(author).stream()
-                    .map(book -> new Book(book.getTitle(), book.getAuthor(), book.getGenre(), book.getDescription()))
+                    .map(book -> new Book(
+                            book.getId(),
+                            book.getTitle(),
+                            book.getAuthor(),
+                            book.getGenre(),
+                            book.getDescription()
+                    ))
                     .toList();
             books.forEach(bookStoreRepository::save);
         }
@@ -49,5 +61,9 @@ public class BookCommand {
 
     public List<Book> getAllBooks() {
         return bookStoreRepository.findAll();
+    }
+
+    public Book getBookById(Integer id) {
+        return bookStoreRepository.findById(id);
     }
 }

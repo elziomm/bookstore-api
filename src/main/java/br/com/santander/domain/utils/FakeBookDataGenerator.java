@@ -18,6 +18,7 @@ public class FakeBookDataGenerator {
         List<Book> books = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             Book book = new Book(
+                    faker.number().randomNumber(),
                     faker.book().title(),
                     faker.book().author(),
                     faker.book().genre(),

@@ -1,11 +1,14 @@
 package br.com.santander.application.commands;
 
 import br.com.santander.domain.entities.Book;
+import br.com.santander.domain.exceptions.ImportingException;
 import br.com.santander.domain.gateways.BookStoreRepository;
 import br.com.santander.domain.utils.FakeBookDataGenerator;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -13,6 +16,7 @@ import java.util.List;
 public class BookDataInitializer {
 
     private static final String FILE_PATH = "src/main/resources/datasets/amazon-books-dataset.csv";
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookDataInitializer.class);
     private final BookStoreRepository bookStoreRepository;
     private final KaggleDataImporter kaggleDataImporter;
 
@@ -23,7 +27,7 @@ public class BookDataInitializer {
     }
 
     public void onStartup(@Observes StartupEvent event) {
-        System.out.println("Initializing example book data...");
+        LOGGER.info("Initializing example book data...");
 
         try {
             List<Book> bookList = FakeBookDataGenerator.generateFakeBooks(2);
@@ -31,10 +35,10 @@ public class BookDataInitializer {
 
             kaggleDataImporter.importData(FILE_PATH);
 
-            System.out.println("Example book data has been successfully initialized.");
+            LOGGER.info("Example book data has been successfully initialized.");
         } catch (Exception e) {
-            System.err.println("Error during book data initialization: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error during book data initialization: {}", e.getMessage());
+            throw new ImportingException("Failed to initialize book data: " + e.getMessage());
         }
     }
 }

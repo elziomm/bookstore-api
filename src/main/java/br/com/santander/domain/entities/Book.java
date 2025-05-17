@@ -1,6 +1,7 @@
 package br.com.santander.domain.entities;
 
 public class Book {
+    private Long id;
     private String title;
     private String author;
     private String genre;
@@ -9,11 +10,20 @@ public class Book {
     public Book() {
     }
 
-    public Book(String title, String author, String genre, String description) {
+    public Book(Long id, String title, String author, String genre, String description) {
+        this.id = id;
         this.title = title;
         this.author = author;
         this.genre = genre;
         this.description = description;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getTitle() {

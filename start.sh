@@ -1,10 +1,13 @@
 #!/bin/bash
 
-echo "Iniciando o banco de dados MongoDB..."
-docker-compose up -d mongo
+echo "Aguardando o MongoDB iniciar..."
+while ! timeout 1 bash -c "echo > /dev/tcp/$MONGO_URL/27017"; do
+    echo "MongoDB ainda não está pronto, aguardando..."
+    sleep 2
+done
 
 echo "Construindo o projeto..."
-mvn clean package -DskipTests
+./mvnw clean package -DskipTests
 
 echo "Iniciando a aplicação..."
-java -jar target/*-runner.jar
+MONGO_URL=$MONGO_URL java -jar target/*-runner.jar

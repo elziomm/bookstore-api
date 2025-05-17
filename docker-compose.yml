@@ -1,23 +1,31 @@
 version: '3.8'
 
 services:
+  bookstore-api:
+    container_name: bookstore-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+    networks:
+      - bookstore-network
+    stdin_open: true
+    tty: true
+    environment:
+      - MONGO_URL=mongo
+    entrypoint: ["/app/start.sh"]
+
   mongo:
-    image: mongo:5.0
+    image: mongo:latest
     container_name: mongo
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+    networks:
+      - bookstore-network
 
-  app:
-    build:
-      context: .
-    container_name: catalogo-do-sabio
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mongo
-    entrypoint: ["./start.sh"]
-
-volumes:
-  mongo_data:
+networks:
+  bookstore-network:
+    driver: bridge

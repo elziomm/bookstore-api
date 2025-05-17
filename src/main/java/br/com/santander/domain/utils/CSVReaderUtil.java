@@ -11,7 +11,7 @@ import java.util.List;
 
 public class CSVReaderUtil {
 
-    private CSVReaderUtil () {
+    private CSVReaderUtil() {
         // Constructor
     }
 
@@ -26,12 +26,13 @@ public class CSVReaderUtil {
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
 
-                if (fields.length >= 4) {
+                if (fields.length >= 5) {
                     Book bookDTO = new Book(
+                            Long.valueOf(fields[0].trim()),
                             fields[1].trim(),
                             fields[2].trim(),
-                            fields[3].trim(),
-                            fields[4].trim()
+                            "",
+                            ""
                     );
                     books.add(bookDTO);
                 }
